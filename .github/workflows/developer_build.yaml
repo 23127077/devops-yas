@@ -1,0 +1,121 @@
+name: Developer Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      cart_branch:
+        description: 'Branch for cart service'
+        required: true
+        default: 'main'
+      customer_branch:
+        description: 'Branch for customer service'
+        required: true
+        default: 'main'
+      inventory_branch:
+        description: 'Branch for inventory service'
+        required: true
+        default: 'main'
+      location_branch:
+        description: 'Branch for location service'
+        required: true
+        default: 'main'
+      media_branch:
+        description: 'Branch for media service'
+        required: true
+        default: 'main'
+      order_branch:
+        description: 'Branch for order service'
+        required: true
+        default: 'main'
+      payment_branch:
+        description: 'Branch for payment service'
+        required: true
+        default: 'main'
+      payment_paypal_branch:
+        description: 'Branch for payment-paypal service'
+        required: true
+        default: 'main'
+      product_branch:
+        description: 'Branch for product service'
+        required: true
+        default: 'main'
+      promotion_branch:
+        description: 'Branch for promotion service'
+        required: true
+        default: 'main'
+      rating_branch:
+        description: 'Branch for rating service'
+        required: true
+        default: 'main'
+      search_branch:
+        description: 'Branch for search service'
+        required: true
+        default: 'main'
+      tax_branch:
+        description: 'Branch for tax service'
+        required: true
+        default: 'main'
+      recommendation_branch:
+        description: 'Branch for recommendation service'
+        required: true
+        default: 'main'
+      webhook_branch:
+        description: 'Branch for webhook service'
+        required: true
+        default: 'main'
+      sampledata_branch:
+        description: 'Branch for sampledata service'
+        required: true
+        default: 'main'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get domain
+        id: domain
+        run: |
+          DOMAIN=$(yq -r '.domain' ./k8s/deploy/cluster-config.yaml)
+          echo "DOMAIN=$DOMAIN" >> $GITHUB_ENV
+      - name: Setup Helm
+        run: |
+          helm repo add stakater https://stakater.github.io/stakater-charts
+          helm repo update
+      - name: Deploy services
+        run: |
+          declare -A branches
+          branches[cart]="${{ inputs.cart_branch }}"
+          branches[customer]="${{ inputs.customer_branch }}"
+          branches[inventory]="${{ inputs.inventory_branch }}"
+          branches[location]="${{ inputs.location_branch }}"
+          branches[media]="${{ inputs.media_branch }}"
+          branches[order]="${{ inputs.order_branch }}"
+          branches[payment]="${{ inputs.payment_branch }}"
+          branches[payment-paypal]="${{ inputs.payment_paypal_branch }}"
+          branches[product]="${{ inputs.product_branch }}"
+          branches[promotion]="${{ inputs.promotion_branch }}"
+          branches[rating]="${{ inputs.rating_branch }}"
+          branches[search]="${{ inputs.search_branch }}"
+          branches[tax]="${{ inputs.tax_branch }}"
+          branches[recommendation]="${{ inputs.recommendation_branch }}"
+          branches[webhook]="${{ inputs.webhook_branch }}"
+          branches[sampledata]="${{ inputs.sampledata_branch }}"
+          
+          for service in cart customer inventory location media order payment payment-paypal product promotion rating search tax recommendation webhook sampledata; do
+            branch=${branches[$service]}
+            if [ "$branch" != "main" ]; then
+              tag=$(git rev-parse --short origin/$branch)
+            else
+              tag="latest"
+            fi
+            helm dependency build ./k8s/charts/$service
+            helm upgrade --install $service ./k8s/charts/$service \
+              --namespace yas --create-namespace \
+              --set backend.image.repository=${{ secrets.DOCKERHUB_USERNAME }}/$service \
+              --set backend.image.tag=$tag \
+              --set backend.ingress.host="api.$DOMAIN"
+            sleep 60
+          done
