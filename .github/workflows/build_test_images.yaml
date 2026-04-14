@@ -1,0 +1,37 @@
+name: Build Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [tax, product, cart]
+      fail-fast: false
+    steps:
+      - name: Kiểm tra Repo
+        uses: actions/checkout@v4
+
+      - name: Đăng nhập vào DockerHub cá nhân
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Cài đặt JDK 21 (Bắt buộc cho YAS)
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Biên dịch cục bộ (Bỏ qua unit test & checkstyle)
+        run: mvn clean package -pl ${{ matrix.service }} -am -DskipTests -Dcheckstyle.skip=true
+
+      - name: Build & Push lên DockerHub
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/yas-${{ matrix.service }}:latest
