@@ -1,4 +1,4 @@
-name: CD - Developer Build Test (Siêu Nhẹ)
+name: Test CD
 
 on:
   workflow_dispatch:
@@ -63,11 +63,11 @@ jobs:
           echo "====================================================================="
           echo "🎉 DEPLOYMENT HOÀN TẤT CHO MÔI TRƯỜNG TEST (Bản Nhẹ)! 🎉"
           echo "====================================================================="
-          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' | awk '{print $1}')
           
           if [ -n "$TARGET_SERVICE" -a "$TARGET_SERVICE" != " " ]; then
             sleep 3
-            NODE_PORT=$(kubectl get svc $TARGET_SERVICE-backend -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' || echo "N/A")
+            NODE_PORT=$(kubectl get svc $TARGET_SERVICE -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' || echo "N/A")
             
             echo "🔥 THÔNG TIN TRUY CẬP CHO SERVICE: $TARGET_SERVICE"
             echo "1. Thêm dòng này vào cuối file hosts:"
