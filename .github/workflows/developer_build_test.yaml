@@ -53,7 +53,7 @@ jobs:
             helm dependency build ./k8s/charts/$service || true
             helm upgrade --install $service ./k8s/charts/$service \
               --namespace yas-test --create-namespace \
-              --set backend.image.repository=${{ secrets.DOCKERHUB_USERNAME }}/yas-$service \
+              --set backend.image.repository=${{ secrets.DOCKER_USERNAME }}/yas-$service \
               --set backend.image.tag=$tag \
               --set backend.service.type=NodePort \
               --set backend.ingress.enabled=false || true
