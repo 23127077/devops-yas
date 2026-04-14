@@ -38,16 +38,6 @@ jobs:
           
           for service in $SERVICES; do
             tag="latest"
-            branch="main"
-            
-            # Nếu trúng vòng lặp service đang sửa -> lấy mã hash từ nhánh đó
-            if [ "$service" == "$TARGET_SERVICE" ] && [ -n "$TARGET_BRANCH" ]; then
-              branch=$TARGET_BRANCH
-              tag=$(git ls-remote origin refs/heads/$branch | awk '{print $1}' | cut -c1-7)
-              if [ -z "$tag" ]; then
-                tag=$branch
-              fi
-            fi
             
             # Cài đặt dịch vụ vào K8s (Bỏ qua --wait để tiết kiệm thời gian)
             helm dependency build ./k8s/charts/$service || true
