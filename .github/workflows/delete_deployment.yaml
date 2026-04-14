@@ -1,0 +1,26 @@
+name: Delete Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  delete_services:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Helm
+        run: |
+          helm repo add stakater https://stakater.github.io/stakater-charts
+          helm repo update
+
+      - name: Delete Helm Releases
+        run: |
+          NAMESPACE="yas-test"
+          helm list -n $NAMESPACE --short | xargs -L1 helm uninstall -n $NAMESPACE || true
+
+      - name: Cleanup Remaining Resources
+        run: |
+          NAMESPACE="yas-test"
+          kubectl delete all --all -n $NAMESPACE || true
+          kubectl delete ingress --all -n $NAMESPACE || true
+          kubectl delete configmap --all -n $NAMESPACE || true
+          kubectl delete secret --all -n $NAMESPACE || grep -v 'default-token' || true
