@@ -66,7 +66,7 @@ jobs:
           if [ -n "$TARGET_SERVICE" -a "$TARGET_SERVICE" != " " ]; then
             # Đợi một chút để K8s load port
             sleep 3
-            NODE_PORT=$(kubectl get svc $TARGET_SERVICE -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' || echo "N/A")
+            NODE_PORT=$(kubectl get svc $TARGET_SERVICE-backend -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' || echo "N/A")
             
             echo "🔥 THÔNG TIN TRUY CẬP CHO SERVICE: $TARGET_SERVICE"
             echo "1. Thêm dòng này vào cuối file hosts trên máy của bạn:"
