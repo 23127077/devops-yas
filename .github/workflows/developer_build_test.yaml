@@ -33,8 +33,8 @@ jobs:
           # Cắt danh sách xuống chỉ còn 3 service làm nòng cốt để test Istio theo đúng đề bài
           # 1. tax: service bị thử nghiệm policy mTLS và VirtualService Retry
           # 2. product: service duy nhất được phép gọi vào tax (theo Istio AuthorizationPolicy)
-          # 3. cart: service đóng vai trò "kẻ lạ" bị Istio chặn (Test HTTP 403)
-          SERVICES="cart product tax"
+          # 4. yas-configuration: Chứa config map lõi bắt buộc để các app spring boot khởi động được!
+          SERVICES="yas-configuration cart product tax"
           
           for service in $SERVICES; do
             tag="latest"
