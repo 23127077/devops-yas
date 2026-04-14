@@ -1,0 +1,80 @@
+name: CD - Developer Build Test (Siêu Nhẹ)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_service:
+        description: 'Tên service developer đang sửa code (vd: tax)'
+        required: true
+        default: 'tax'
+        type: choice
+        options:
+          - tax
+          - product
+          - cart
+      target_branch:
+        description: 'Nhánh code muốn test (vd: dev_tax_service hoặc main)'
+        required: true
+        default: 'dev_tax_service'
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Lấy mã Commit ID của nhánh
+        run: |
+          TARGET_SERVICE="${{ inputs.target_service }}"
+          TARGET_BRANCH="${{ inputs.target_branch }}"
+          
+          # Cắt danh sách xuống chỉ còn 3 service làm nòng cốt để test Istio theo đúng đề bài
+          # 1. tax: service bị thử nghiệm policy mTLS và VirtualService Retry
+          # 2. product: service duy nhất được phép gọi vào tax (theo Istio AuthorizationPolicy)
+          # 3. cart: service đóng vai trò "kẻ lạ" bị Istio chặn (Test HTTP 403)
+          SERVICES="cart product tax"
+          
+          for service in $SERVICES; do
+            tag="latest"
+            branch="main"
+            
+            # Nếu trúng vòng lặp service đang sửa -> lấy mã hash từ nhánh đó
+            if [ "$service" == "$TARGET_SERVICE" ] && [ -n "$TARGET_BRANCH" ]; then
+              branch=$TARGET_BRANCH
+              tag=$(git ls-remote origin refs/heads/$branch | awk '{print $1}' | cut -c1-7)
+              if [ -z "$tag" ]; then
+                tag=$branch
+              fi
+            fi
+            
+            # Cài đặt dịch vụ vào K8s (Bỏ qua --wait để tiết kiệm thời gian)
+            helm dependency build ./k8s/charts/$service || true
+            helm upgrade --install $service ./k8s/charts/$service \
+              --namespace yas-test --create-namespace \
+              --set backend.image.repository=${{ secrets.DOCKERHUB_USERNAME }}/yas-$service \
+              --set backend.image.tag=$tag \
+              --set backend.service.type=NodePort \
+              --set backend.ingress.enabled=false || true
+          done
+          
+          # Trích xuất IP và Port cho Dev
+          echo "====================================================================="
+          echo "🎉 DEPLOYMENT HOÀN TẤT CHO MÔI TRƯỜNG TEST (Bản Nhẹ)! 🎉"
+          echo "====================================================================="
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+          
+          if [ -n "$TARGET_SERVICE" -a "$TARGET_SERVICE" != " " ]; then
+            sleep 3
+            NODE_PORT=$(kubectl get svc $TARGET_SERVICE-backend -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' || echo "N/A")
+            
+            echo "🔥 THÔNG TIN TRUY CẬP CHO SERVICE: $TARGET_SERVICE"
+            echo "1. Thêm dòng này vào cuối file hosts:"
+            echo "   $NODE_IP api.yas.local"
+            echo "2. URL truy cập:"
+            echo "   http://api.yas.local:$NODE_PORT"
+          else
+            echo "URL IP là $NODE_IP, dùng lệnh kubectl get svc -n yas-test để tìm Port"
+          fi
+          echo "====================================================================="
