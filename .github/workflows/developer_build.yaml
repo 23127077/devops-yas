@@ -53,3 +53,34 @@ jobs:
               --set backend.ingress.enabled=false \
               --wait --timeout 2m || true
           done
+          
+          # Khởi tạo lệnh tự động lấy IP và Port thực tế cho Dev
+          echo "====================================================================="
+          echo "🎉 DEPLOYMENT HOÀN TẤT CHO MÔI TRƯỜNG TEST! 🎉"
+          echo "====================================================================="
+          
+          # Lấy IP của Kubernetes Worker node đang chạy (k3s)
+          NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+          
+          # Nếu có deploy specific service thì trích xuất NodePort của nó
+          if [ -n "$TARGET_SERVICE" -a "$TARGET_SERVICE" != " " ]; then
+            # Đợi một chút để K8s load port
+            sleep 3
+            NODE_PORT=$(kubectl get svc $TARGET_SERVICE -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' || echo "N/A")
+            
+            echo "🔥 THÔNG TIN TRUY CẬP CHO SERVICE: $TARGET_SERVICE"
+            echo "1. Thêm dòng này vào cuối file hosts trên máy của bạn:"
+            echo "   (Linux/Mac: /etc/hosts | Windows: C:\Windows\System32\drivers\etc\hosts)"
+            echo "   ---------------------------------------"
+            echo "   $NODE_IP api.yas.local"
+            echo "   ---------------------------------------"
+            echo "2. Mở trình duyệt web hoặc Postman gọi vào link:"
+            echo "   http://api.yas.local:$NODE_PORT"
+            
+          else
+            echo "1. Thêm IP Worker Node vào file hosts:"
+            echo "   $NODE_IP api.yas.local"
+            echo "2. Để xem các Port của toàn bộ Service gọi lệnh sau trên cụm K8s:"
+            echo "   kubectl get svc -n yas-test"
+          fi
+          echo "====================================================================="
