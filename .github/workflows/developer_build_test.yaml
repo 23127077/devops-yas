@@ -50,7 +50,7 @@ jobs:
             helm dependency build ./k8s/charts/$CHART_DIR || true
             helm upgrade --install $service ./k8s/charts/$CHART_DIR \
               --namespace yas-test --create-namespace \
-              --set $IMAGE_PREFIX.image.repository=${{ secrets.DOCKERHUB_USERNAME }}/yas-$service \
+              --set $IMAGE_PREFIX.image.repository=${{ secrets.DOCKER_USERNAME }}/yas-$service \
               --set $IMAGE_PREFIX.image.tag=$tag \
               --set $IMAGE_PREFIX.service.type=NodePort \
               --set $IMAGE_PREFIX.ingress.enabled=false \

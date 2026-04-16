@@ -15,7 +15,7 @@ jobs:
       - name: Delete Helm Releases
         run: |
           NAMESPACE="yas-test"
-          helm list -n $NAMESPACE --short | xargs -L1 helm uninstall -n $NAMESPACE || true
+          helm list -n $NAMESPACE --short | xargs --no-run-if-empty -L1 helm uninstall -n $NAMESPACE || true
 
       - name: Cleanup Remaining Resources
         run: |
