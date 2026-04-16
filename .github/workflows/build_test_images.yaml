@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [cart, customer, inventory, location, media, order, payment, payment-paypal, product, promotion, rating, search, tax, recommendation, webhook, sampledata]
+        service: [cart, customer, inventory, location, media, order, payment, payment-paypal, product, promotion, rating, search, tax, recommendation, webhook, sampledata, backoffice-bff, backoffice, storefront, store-bff]
       fail-fast: false
     steps:
       - name: Kiểm tra Repo
