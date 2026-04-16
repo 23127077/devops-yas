@@ -32,19 +32,29 @@ jobs:
           # 1. tax: service bị thử nghiệm policy mTLS và VirtualService Retry
           # 2. product: service duy nhất được phép gọi vào tax (theo Istio AuthorizationPolicy)
           # 4. yas-configuration: Chứa config map lõi bắt buộc để các app spring boot khởi động được!
-          SERVICES="yas-configuration tax product backoffice-bff backoffice storefront store-bff"
+          SERVICES="yas-configuration tax product backoffice-bff backoffice storefront storefront-bff"
           
           for service in $SERVICES; do
             tag="latest"
             
-            # Cài đặt dịch vụ vào K8s (Bỏ qua --wait để tiết kiệm thời gian)
-            helm dependency build ./k8s/charts/$service || true
-            helm upgrade --install $service ./k8s/charts/$service \
+            # Xử lý ngoại lệ tên thư mục và tham số cấu hình cho Frontend (UI)
+            CHART_DIR="$service"
+            IMAGE_PREFIX="backend"
+            
+            if [ "$service" == "backoffice" ] || [ "$service" == "storefront" ]; then
+              CHART_DIR="$service-ui"
+              IMAGE_PREFIX="ui"
+            fi
+            
+            echo "Deploying $service (Chart: $CHART_DIR)..."
+            helm dependency build ./k8s/charts/$CHART_DIR || true
+            helm upgrade --install $service ./k8s/charts/$CHART_DIR \
               --namespace yas-test --create-namespace \
-              --set backend.image.repository=${{ secrets.DOCKER_USERNAME }}/yas-$service \
-              --set backend.image.tag=$tag \
-              --set backend.service.type=NodePort \
-              --set backend.ingress.enabled=false || true
+              --set $IMAGE_PREFIX.image.repository=${{ secrets.DOCKERHUB_USERNAME }}/yas-$service \
+              --set $IMAGE_PREFIX.image.tag=$tag \
+              --set $IMAGE_PREFIX.service.type=NodePort \
+              --set $IMAGE_PREFIX.ingress.enabled=false \
+              || true
           done
           
           # Trích xuất IP và Port cho Dev
