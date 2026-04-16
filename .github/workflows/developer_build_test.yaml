@@ -6,12 +6,10 @@ on:
       target_service:
         description: 'Tên service developer đang sửa code (vd: tax)'
         required: true
-        default: 'tax'
+        default: 'product'
         type: choice
         options:
-          - tax
           - product
-          - cart
       target_branch:
         description: 'Nhánh code muốn test (vd: dev_tax_service hoặc main)'
         required: true
@@ -34,7 +32,7 @@ jobs:
           # 1. tax: service bị thử nghiệm policy mTLS và VirtualService Retry
           # 2. product: service duy nhất được phép gọi vào tax (theo Istio AuthorizationPolicy)
           # 4. yas-configuration: Chứa config map lõi bắt buộc để các app spring boot khởi động được!
-          SERVICES="yas-configuration cart product tax search"
+          SERVICES="yas-configuration tax product backoffice-bff backoffice storefront store-bff"
           
           for service in $SERVICES; do
             tag="latest"
