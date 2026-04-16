@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [tax, product, cart]
+        service: [tax, product, cart, search]
       fail-fast: false
     steps:
       - name: Kiểm tra Repo
