@@ -59,20 +59,32 @@ jobs:
           
           # Trích xuất IP và Port cho Dev
           echo "====================================================================="
-          echo "🎉 DEPLOYMENT HOÀN TẤT CHO MÔI TRƯỜNG TEST (Bản Nhẹ)! 🎉"
+          echo "🎉 DEPLOYMENT HOÀN TẤT! 🎉"
           echo "====================================================================="
           NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' | awk '{print $1}')
           
-          if [ -n "$TARGET_SERVICE" -a "$TARGET_SERVICE" != " " ]; then
-            sleep 3
-            NODE_PORT=$(kubectl get svc $TARGET_SERVICE -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' || echo "N/A")
-            
-            echo "🔥 THÔNG TIN TRUY CẬP CHO SERVICE: $TARGET_SERVICE"
-            echo "1. Thêm dòng này vào cuối file hosts:"
-            echo "   $NODE_IP api.yas.local"
-            echo "2. URL truy cập:"
-            echo "   http://api.yas.local:$NODE_PORT"
+          echo "📌 Thêm dòng sau vào file hosts (nếu chưa có):"
+          echo "   $NODE_IP api.yas.local"
+          echo ""
+          echo "🌐 DANH SÁCH LINK TRUY CẬP:"
+          
+          # Backoffice UI (service name: backoffice-ui, port: 3000)
+          BO_PORT=$(kubectl get svc backoffice-ui -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
+          echo "   [Backoffice] http://api.yas.local:$BO_PORT"
+          
+          # Storefront UI (service name: storefront-ui, port: 3000)
+          SF_PORT=$(kubectl get svc storefront-ui -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
+          echo "   [Storefront] http://api.yas.local:$SF_PORT"
+          
+          # Tax Swagger (để test Istio)
+          TAX_PORT=$(kubectl get svc tax -n yas-test -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
+          echo "   [Tax API]    http://api.yas.local:$TAX_PORT/tax/swagger-ui.html"
+          
+          # Kiali (service mesh dashboard)
+          KIALI_PORT=$(kubectl get svc kiali -n istio-system -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "N/A")
+          if [ "$KIALI_PORT" == "N/A" ]; then
+            echo "   [Kiali]      Chưa expose NodePort. Chạy: kubectl patch svc kiali -n istio-system -p '{\"spec\":{\"type\":\"NodePort\"}}'"
           else
-            echo "URL IP là $NODE_IP, dùng lệnh kubectl get svc -n yas-test để tìm Port"
+            echo "   [Kiali]      http://$NODE_IP:$KIALI_PORT/kiali"
           fi
           echo "====================================================================="
