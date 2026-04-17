@@ -32,7 +32,7 @@ jobs:
           # 1. tax: service bị thử nghiệm policy mTLS và VirtualService Retry
           # 2. product: service duy nhất được phép gọi vào tax (theo Istio AuthorizationPolicy)
           # 4. yas-configuration: Chứa config map lõi bắt buộc để các app spring boot khởi động được!
-          SERVICES="yas-configuration tax product backoffice-bff backoffice storefront storefront-bff"
+          SERVICES="yas-configuration tax product backoffice storefront"
           
           for service in $SERVICES; do
             tag="latest"
